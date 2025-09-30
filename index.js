@@ -1,50 +1,42 @@
 "use strict";
 
-var util = require('util');
-var stream = require('stream');
-var EventEmitter = require('events');
-var uwrap = require('bindings')('uwrap');
-var debug = require('debug')("usocket");
-
+var util = require("util");
+var stream = require("stream");
+var EventEmitter = require("events");
+var uwrap = require("bindings")("uwrap");
+var debug = require("debug")("usocket");
 
 //-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----
 //--
 
 exports.USocket = USocket;
 function USocket(opts, cb) {
-	if (!opts || typeof opts !== 'object')
-		opts = { path: opts };
+	if (!opts || typeof opts !== "object") opts = { path: opts };
 
 	var duplexOpts = { writableObjectMode: true };
-	if ("allowHalfOpen" in opts)
-		duplexOpts = opts.allowHalfOpen;
+	if ("allowHalfOpen" in opts) duplexOpts = opts.allowHalfOpen;
 	stream.Duplex.call(this, duplexOpts);
 
 	debug("new USocket", opts);
-	if (opts.fd || opts.path)
-		this.connect(opts, cb);
+	if (opts.fd || opts.path) this.connect(opts, cb);
 }
 
 util.inherits(USocket, stream.Duplex);
 
-USocket.prototype._read = function(size) {
+USocket.prototype._read = function (size) {
 	debug("USocket._read", size);
-	if (this._wrap)
-		this._wrap.resume();
+	if (this._wrap) this._wrap.resume();
 };
 
-USocket.prototype._write = function(chunk, encoding, callback) {
-	if (!this._wrap)
-		return callback(new Error("USocket not connected"));
+USocket.prototype._write = function (chunk, encoding, callback) {
+	if (!this._wrap) return callback(new Error("USocket not connected"));
 
 	var data, fds, cb;
 	if (Buffer.isBuffer(chunk)) {
 		data = chunk;
-	}
-	else if (Array.isArray(chunk)) {
+	} else if (Array.isArray(chunk)) {
 		fds = chunk;
-	}
-	else {
+	} else {
 		cb = chunk.callback;
 		data = chunk.data;
 		fds = chunk.fds;
@@ -54,7 +46,7 @@ USocket.prototype._write = function(chunk, encoding, callback) {
 		return callback(new Error("USocket data needs to be a buffer"));
 	if (fds && !Array.isArray(fds))
 		return callback(new Error("USocket fds needs to be an array"));
-	if (cb && typeof cb !== 'function')
+	if (cb && typeof cb !== "function")
 		return callback(new Error("USocket write callback needs to be a function"));
 	if (!data && !fds)
 		return callback(new Error("USocket write needs a data or array"));
@@ -65,26 +57,28 @@ USocket.prototype._write = function(chunk, encoding, callback) {
 	// 	debug("USocket._write error", r);
 	// 	return callback(r);
 	// }
-	 if (!data || r == data.length) {
+	if (!data || r == data.length) {
 		if (cb) cb(chunk);
 		return callback();
 	}
 
 	debug("USocket._write waiting");
-	this._wrap.drain = this._write.bind(this,
-		{ data: data.subarray(r), callback: cb  }, encoding, callback);
+	this._wrap.drain = this._write.bind(
+		this,
+		{ data: data.subarray(r), callback: cb },
+		encoding,
+		callback,
+	);
 };
 
-USocket.prototype.connect = function(opts, cb) {
-	if (this._wrap)
-		throw new Error("connect on already connected USocket");
+USocket.prototype.connect = function (opts, cb) {
+	if (this._wrap) throw new Error("connect on already connected USocket");
 
-	if (typeof opts === 'string') {
+	if (typeof opts === "string") {
 		opts = { path: opts };
 	}
 
-	if (typeof cb === 'function')
-		this.once('connected', cb);
+	if (typeof cb === "function") this.once("connected", cb);
 
 	debug("USocket connect", opts);
 
@@ -94,22 +88,22 @@ USocket.prototype.connect = function(opts, cb) {
 	this._wrap.drain = null;
 	this._wrap.fds = [];
 
-	if (typeof opts.fd === 'number') {
+	if (typeof opts.fd === "number") {
 		this._wrap.adopt(opts.fd);
 		this.fd = opts.fd;
 		return;
 	}
 
-	if (typeof opts.path !== 'string')
+	if (typeof opts.path !== "string")
 		throw new Error("USocket#connect expects string path");
 	this._wrap.connect(opts.path);
 };
 
-USocket.prototype._wrapEvent = function(event, a0, a1) {
+USocket.prototype._wrapEvent = function (event, a0, a1) {
 	if (event === "connect") {
 		this.fd = a0;
 		debug("USocket connected on " + this.fd);
-		this.emit('connected');
+		this.emit("connected");
 	}
 
 	if (event === "error") {
@@ -117,23 +111,22 @@ USocket.prototype._wrapEvent = function(event, a0, a1) {
 		this._wrap.close();
 		this._wrap = null;
 		this.emit("error", a0);
-		this.emit('close', a0);
+		this.emit("close", a0);
 	}
 
 	if (event === "data") {
 		if (a1 && a1.length > 0) {
 			debug("USocket received file descriptors", a1);
 			this._wrap.fds = this._wrap.fds.concat(a1);
-			this.emit('fds', a1);
+			this.emit("fds", a1);
 		}
 
 		if (a0) {
-			if (!this.push(a0))
-				this._wrap.pause();
+			if (!this.push(a0)) this._wrap.pause();
 		}
 
 		if (a1 && !a0) {
-			this.emit('readable');
+			this.emit("readable");
 		}
 
 		if (!a0 && !a1 && !this._wrap.endReceived) {
@@ -152,16 +145,14 @@ USocket.prototype._wrapEvent = function(event, a0, a1) {
 	}
 };
 
-USocket.prototype.read = function(size, fdSize) {
+USocket.prototype.read = function (size, fdSize) {
 	if (!this._wrap) return null;
 
-	if (typeof fdSize === 'undefined')
+	if (typeof fdSize === "undefined")
 		return stream.Duplex.prototype.read.apply(this, arguments);
 
-	if (fdSize === null)
-		fdSize = this._wrap.fds.length;
-	else if (this._wrap.fds.length < fdSize)
-		return null;
+	if (fdSize === null) fdSize = this._wrap.fds.length;
+	else if (this._wrap.fds.length < fdSize) return null;
 
 	var data = stream.Duplex.prototype.read.call(this, size);
 	if (size && !data) return data;
@@ -170,24 +161,23 @@ USocket.prototype.read = function(size, fdSize) {
 	return { data: data, fds: fds };
 };
 
-USocket.prototype.unshift = function(chunk, fds) {
+USocket.prototype.unshift = function (chunk, fds) {
 	if (chunk) {
 		stream.Duplex.prototype.unshift.call(this, chunk);
 	}
 
 	if (Array.isArray(fds) && this._wrap) {
-		while (fds.length > 0)
-			this._wrap.fds.unshift(fds.pop);
+		while (fds.length > 0) this._wrap.fds.unshift(fds.pop);
 	}
 };
 
-USocket.prototype.write = function(chunk, encoding, callback) {
-	if (typeof encoding === 'function') {
+USocket.prototype.write = function (chunk, encoding, callback) {
+	if (typeof encoding === "function") {
 		callback = encoding;
 		encoding = null;
 	}
 
-	if (typeof chunk === 'string') {
+	if (typeof chunk === "string") {
 		chunk = Buffer.from(chunk);
 	}
 
@@ -198,7 +188,7 @@ USocket.prototype.write = function(chunk, encoding, callback) {
 	stream.Duplex.prototype.write.call(this, chunk, null, callback);
 };
 
-USocket.prototype.end = function(data, encoding, callback) {
+USocket.prototype.end = function (data, encoding, callback) {
 	stream.Duplex.prototype.end.call(this, data, encoding, callback);
 	if (this._wrap) {
 		debug("USocket shutdown");
@@ -209,19 +199,18 @@ USocket.prototype.end = function(data, encoding, callback) {
 	}
 };
 
-USocket.prototype.destroy = function() {
-	if (!this._wrap)
-		return;
+USocket.prototype.destroy = function () {
+	if (!this._wrap) return;
 	this._wrap.close();
 	this._wrap = null;
 };
 
-USocket.prototype.maybeClose = function() {
+USocket.prototype.maybeClose = function () {
 	if (!this._wrap || !this._wrap.shutdownCalled || !this._wrap.endReceived)
 		return;
 	debug("USocket closing socket at end");
 	this.destroy();
-	this.emit('close');
+	this.emit("close");
 };
 
 //-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----
@@ -236,30 +225,27 @@ function UServer() {
 
 util.inherits(UServer, EventEmitter);
 
-UServer.prototype.listen = function(path, backlog, cb) {
+UServer.prototype.listen = function (path, backlog, cb) {
 	if (this._wrap || this.listening)
 		throw new Error("listen on already listened UServer");
 
-	if (typeof path === 'object') {
+	if (typeof path === "object") {
 		backlog = path.backlog;
 		path = path.path;
 		cb = backlog;
-	}
-	else if (typeof backlog === 'function') {
+	} else if (typeof backlog === "function") {
 		cb = backlog;
 		backlog = 0;
 	}
 
 	backlog = backlog || 16;
 
-	if (typeof path !== 'string')
+	if (typeof path !== "string") throw new Error("UServer expects valid path");
+
+	if (typeof backlog !== "number")
 		throw new Error("UServer expects valid path");
 
-	if (typeof backlog !== 'number')
-		throw new Error("UServer expects valid path");
-
-	if (typeof cb === 'function')
-		this.once('listening', cb);
+	if (typeof cb === "function") this.once("listening", cb);
 
 	debug("creating UServerWrap");
 	this._wrap = new uwrap.UServerWrap(this._wrapEvent.bind(this));
@@ -267,33 +253,29 @@ UServer.prototype.listen = function(path, backlog, cb) {
 	this._wrap.listen(path, backlog);
 };
 
-UServer.prototype.pause = function() {
+UServer.prototype.pause = function () {
 	this.paused = true;
-	if (this.listening && this._wrap)
-		this._wrap.pause();
+	if (this.listening && this._wrap) this._wrap.pause();
 };
 
-UServer.prototype.resume = function() {
+UServer.prototype.resume = function () {
 	this.paused = false;
-	if (this.listening && this._wrap)
-		this._wrap.resume();
+	if (this.listening && this._wrap) this._wrap.resume();
 };
 
-UServer.prototype.close = function() {
-	if (!this._wrap)
-		return;
+UServer.prototype.close = function () {
+	if (!this._wrap) return;
 	this._wrap.close();
 	this._wrap = undefined;
 };
 
-UServer.prototype._wrapEvent = function(event, a0, a1) {
+UServer.prototype._wrapEvent = function (event, a0, a1) {
 	if (event === "listening") {
 		this.fd = a0;
 		debug("UServer listening on " + this.fd);
-		this.emit('listening');
+		this.emit("listening");
 		this.listening = true;
-		if (!this.paused)
-			this._wrap.resume();
+		if (!this.paused) this._wrap.resume();
 	}
 
 	if (event === "error") {
@@ -306,6 +288,6 @@ UServer.prototype._wrapEvent = function(event, a0, a1) {
 	if (event === "accept") {
 		debug("UServer accepted socket " + a0);
 		var n = new USocket({ fd: a0 });
-		this.emit('connection', n);
+		this.emit("connection", n);
 	}
 };
