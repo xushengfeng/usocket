@@ -1,4 +1,3 @@
-
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -520,12 +519,24 @@ namespace uwrap
 					}
 				}
 
-				// Create a buffer of any read data.
+				// Debug: buffer creation
 				v8::Local<v8::Value> buffer = Nan::Undefined();
-				if (res == 0 || !Nan::NewBuffer(static_cast<char *>(iov[0].iov_base), res).ToLocal(&buffer))
+				if (res > 0 && iov[0].iov_base != nullptr)
+				{
+					// 使用 Nan::CopyBuffer，避免直接管理 malloc/free
+					buffer = Nan::CopyBuffer(static_cast<char *>(iov[0].iov_base), res).ToLocalChecked();
 					free(iov[0].iov_base);
+				}
+				else if (res == 0)
+				{
+					free(iov[0].iov_base);
+				}
+				else
+				{
+					if (iov[0].iov_base)
+						free(iov[0].iov_base);
+				}
 
-				// Convert the descriptors into a v8 array
 				v8::Local<v8::Value> jsfds = Nan::Undefined();
 				if (fds.size() > 0)
 				{
