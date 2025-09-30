@@ -1,6 +1,10 @@
-#USocket
+# USocket
 
-this is a fork from https://github.com/jhs67/usocket
+this is a fork from https://github.com/jhs67/usocket/tree/d9cc13b8948a7b3e505d38eb20107d96760a531d
+
+easy use for Electron
+
+add some types
 
 ## Overview
 
