@@ -1,39 +1,39 @@
 {
-  "name": "usocket",
-  "version": "1.0.1",
-  "description": "unix local sockets with descriptor passing",
-  "main": "index.js",
-  "scripts": {
-    "test": "mocha -R spec",
-    "configure": "node-gyp configure",
-    "build": "node-gyp build",
-    "rebuild": "node-gyp rebuild",
-    "clean": "node-gyp clean"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jhs67/usocket.git"
-  },
-  "keywords": [
-    "unix",
-    "local",
-    "socket",
-    "file",
-    "descriptor"
-  ],
-  "author": "Jon Spencer <jon@jonspencer.ca>",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/jhs67/usocket/issues"
-  },
-  "homepage": "https://github.com/jhs67/usocket#readme",
-  "devDependencies": {
-    "mocha": "^9.2.2"
-  },
-  "dependencies": {
-    "bindings": "^1.5.0",
-    "debug": "^4.3.4",
-    "nan": "^2.23.0",
-    "node-gyp": "^11.4.2"
-  }
+    "name": "@xushengfeng/usocket",
+    "version": "1.1.0",
+    "description": "unix local sockets with descriptor passing",
+    "main": "index.js",
+    "scripts": {
+        "test": "mocha -R spec",
+        "configure": "node-gyp configure",
+        "build": "node-gyp build",
+        "rebuild": "node-gyp rebuild",
+        "clean": "node-gyp clean"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/@ushengfeng/usocket.git"
+    },
+    "keywords": [
+        "unix",
+        "local",
+        "socket",
+        "file",
+        "descriptor"
+    ],
+    "author": "Jon Spencer <jon@jonspencer.ca>",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/xushengfeng/usocket/issues"
+    },
+    "homepage": "https://github.com/xushengfeng/usocket#readme",
+    "devDependencies": {
+        "mocha": "^9.2.2"
+    },
+    "dependencies": {
+        "bindings": "^1.5.0",
+        "debug": "^4.3.4",
+        "nan": "^2.23.0",
+        "node-gyp": "^11.4.2"
+    }
 }
