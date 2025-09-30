@@ -1,8 +1,8 @@
 "use strict";
 
-var util = require("util");
-var stream = require("stream");
-var EventEmitter = require("events");
+var util = require("node:util");
+var stream = require("node:stream");
+var EventEmitter = require("node:events");
 var uwrap = require("bindings")("uwrap");
 var debug = require("debug")("usocket");
 
